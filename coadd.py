@@ -41,7 +41,7 @@ def coadd(fdirs, weights, outname, bulk=50000):
     for i,fil in enumerate(fils):
         start_sample.append(round((tstart - fil.header.tstart)*24*60*60/fil.header.tsamp))
     total_samples = int(np.floor(min([(tstop[i] - tstart)*24*60.*60/fils[i].header.tsamp for i in range(len(fils))])))
-    nchans = fil[0].header.nchans
+    nchans = fils[0].header.nchans
 
     # Define the output header
     outheader = Header(fils[0].header)
@@ -71,7 +71,7 @@ def coadd(fdirs, weights, outname, bulk=50000):
         output = output.astype('uint8').transpose()
         output.tofile(outfile)
 
-if __name__ == "__main__":
+def test():
     import glob
     UTC = "20170803075011"
     BEAM = 1
@@ -79,8 +79,40 @@ if __name__ == "__main__":
 
     utcs = glob.glob(str(BASE_DIR+"/*/*/*.%02d.fil") %BEAM)
 
-    weights = np.random.rand(len(utcs))
     weights = np.ones((len(utcs)))
     weights /= np.sum(weights)
 
     coadd(utcs,weights,"./test_out.fil")
+
+
+def main(args):
+    nfiles = len(args.infiles)
+    if nfiles < 2:
+        print "Specify at least 2 files, exiting..."
+        sys.exit(0)
+    if args.weights:
+        assert len(args.weights) == nfiles, "Input the same number of weights as input files"
+        weights = [float(i) for i in args.weights]
+    else:
+        weights = np.ones(nfiles)
+        weights /= np.sum(weights)
+
+    coadd(args.infiles,weights,args.outfile,args.ngulp)
+
+if __name__ == "__main__":
+    import argparse
+    import sys
+    parser = argparse.ArgumentParser(description = "Adds incoherently filterbanks")
+    
+    parser.add_argument('-f',type=str,nargs='+',required=True,
+        help='Input sigproc files',dest='infiles')
+    parser.add_argument('-w',type=list,nargs='+',required=False,
+            help='weights',dest='weights')
+    parser.add_argument('-o',type=str,required=True,
+            help='output name',dest='outfile')
+    parser.add_argument('-n',type=int,required=False,
+            help='Number of samples to read at a time (default: 50000)',
+            dest='ngulp',default=50000)
+
+    args = parser.parse_args()
+    main(args)
