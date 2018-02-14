@@ -2,7 +2,7 @@ import numpy as np
 from sigpyproc.Readers import FilReader
 from sigpyproc.Header import Header
 
-def coadd(fdirs, weights, outname, bulk=50000):
+def coadd(fdirs, outname, weights=None, bulk=50000):
     """
     incoherently add sigproc filterbank files
 
@@ -10,11 +10,11 @@ def coadd(fdirs, weights, outname, bulk=50000):
     ----------
     fdirs: array_like
         filenames of filterbanks to read
-    weights : array_like
-        weighing factors for each filterbank file.
-        NOTE: should sum up to 1
     outname : str
         filename to which data is saved
+    weights : array_like
+        weighing factors for each filterbank file.
+        defaults to equal weights
     bulk : int, optional
         number of samples to read at a time
         default: 50000
@@ -26,8 +26,12 @@ def coadd(fdirs, weights, outname, bulk=50000):
         assert tmp.header.nbits == 8, "Can only take 8-bit format filterbanks"
         fils.append(tmp)
 
+    if not weights:
+        weights = np.ones((len(fdirs)))
+        weights /= np.sum(weights)
+
     assert len(fdirs) == len(weights), "fdirs and weights should have the same length"
-    assert sum(weights) == 1, "Weights should add up to 1"
+    assert sum(weights) < 1.0001, "Weights should add up to 1"
     for i in range(1,len(fdirs)):
         assert fils[i-1].header.nchans == fils[i].header.nchans, "Input FBanks should have the same nchans"
 
@@ -82,7 +86,7 @@ def test():
     weights = np.ones((len(utcs)))
     weights /= np.sum(weights)
 
-    coadd(utcs,weights,"./test_out.fil")
+    coadd(utcs,"./test_out.fil",weights)
 
 
 def main(args):
@@ -97,7 +101,7 @@ def main(args):
         weights = np.ones(nfiles)
         weights /= np.sum(weights)
 
-    coadd(args.infiles,weights,args.outfile,args.ngulp)
+    coadd(args.infiles,args.outfile,weights,args.ngulp)
 
 if __name__ == "__main__":
     import argparse
