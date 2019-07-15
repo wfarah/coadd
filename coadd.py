@@ -23,8 +23,10 @@ def coadd(fdirs, outname, weights=None, bulk=50000):
     fils = []
     for fname in fdirs:
         tmp = FilReader(fname)
-        assert tmp.header.nbits == 8, "Can only take 8-bit format filterbanks"
+        assert tmp.header.nbits = [8,32], "Can only take 8 or 32-bit format filterbanks"
         fils.append(tmp)
+
+    nbits = tmp.header.nbits
 
     if not weights:
         weights = np.ones((len(fdirs)))
@@ -72,7 +74,10 @@ def coadd(fdirs, outname, weights=None, bulk=50000):
 
         samples_left -= samples_to_read
 
-        output = output.astype('uint8').transpose()
+        if nbits == 8:
+            output = output.astype('uint8').transpose()
+        elif nbits == 32:
+            output = output.astype('float32').transpose()
         output.tofile(outfile)
 
 def test():
